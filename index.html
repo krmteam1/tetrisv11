@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Espaço Relax — Tetris</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: #1a2c26;
+    color: #eef3f0;
+    font-family: system-ui, -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 12px 16px;
+  }
+
+  header {
+    text-align: center;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 0 10px;
+  }
+
+  h1 {
+    font-size: clamp(18px, 4.5vh, 26px);
+    flex-grow: 1;
+    text-align: left;
+  }
+
+  .status-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  #pontos, #nivel {
+    font-size: clamp(14px, 2.5vh, 18px);
+    font-weight: 500;
+  }
+
+  #nivel {
+    color: #f2c94c;
+    transition: transform 0.2s ease;
+  }
+
+  main {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 0;
+    margin-bottom: 12px;
+  }
+
+  #tela {
+    aspect-ratio: 1 / 2;
+    height: 100%;
+    max-width: 100%;
+    background: #27403b;
+    border-radius: 12px;
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(20, 1fr);
+    gap: 1px;
+    padding: 4px;
+    touch-action: none;
+  }
+
+  .celula {
+    background: #1a2c26;
+    border-radius: 2px;
+  }
+
+  .p1 { background: #5fb3b3; }
+  .p2 { background: #f2c94c; }
+  .p3 { background: #9b59b6; }
+  .p4 { background: #72b972; }
+  .p5 { background: #e67e22; }
+  .p6 { background: #3498db; }
+  .p7 { background: #e74c3c; }
+
+  section#controles {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+  }
+
+  #controle-cruz {
+    display: grid;
+    grid-template-columns: repeat(3, clamp(55px, 16vw, 75px));
+    grid-template-rows: repeat(3, clamp(55px, 16vw, 75px));
+    gap: clamp(6px, 2vw, 10px);
+  }
+
+  #btn-cima  { grid-column: 2; grid-row: 1; }
+  #btn-esq   { grid-column: 1; grid-row: 2; }
+  #btn-dir   { grid-column: 3; grid-row: 2; }
+  #btn-baixo { grid-column: 2; grid-row: 3; }
+
+  .btn-dir {
+    width: 100%; height: 100%;
+    border: none;
+    background: #406b60;
+    color: #fff;
+    border-radius: 16px;
+    font-size: clamp(22px, 6vw, 30px);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .btn-dir:active { background: #528578; }
+
+  #botoes-base {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+  }
+
+  button {
+    border: none;
+    border-radius: 14px;
+    font-size: clamp(14px, 3.5vw, 16px);
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  #apoio {
+    background: #2f4d44; 
+    color: #c8e2d9;
+    padding: 12px 10px;
+    flex: 1;
+    max-width: 140px;
+  }
+
+  #iniciar, #recomecar {
+    background: #44aa44;
+    color: #fff;
+    padding: 12px 20px;
+    font-weight: bold;
+    flex: 1;
+    max-width: 180px;
+  }
+  
+  #iniciar:active, #recomecar:active {
+    background: #368c36;
+  }
+
+  .oculto {
+    display: none !important;
+  }
+</style>
+</head>
+<body>
+  
+  <div class="app-container">
+    <header>
+      <h1>Tetris Relax</h1>
+      <div class="status-container">
+        <div id="pontos">Pontos: 0</div>
+        <div id="nivel">Nível: 1</div>
+      </div>
+    </header>
+
+    <main>
+      <div id="tela"></div>
+    </main>
+
+    <section id="controles">
+      <div id="controle-cruz">
+        <button id="btn-cima"  class="btn-dir" type="button">↻</button>
+        <button id="btn-esq"   class="btn-dir" type="button">←</button>
+        <button id="btn-dir"   class="btn-dir" type="button">→</button>
+        <button id="btn-baixo" class="btn-dir" type="button">↓</button>
+      </div>
+
+      <div id="botoes-base">
+        <button id="apoio" type="button" onclick="window.open('https://livepix.gg/tvkrm','_blank')">💛 Apoiar</button>
+        <button id="iniciar" type="button">▶ Iniciar</button>
+        <button id="recomecar" type="button" class="oculto">🔄 Recomeçar</button>
+      </div>
+    </section>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  const COLS = 10;
+  const ROWS = 20;
+  const TELA = document.getElementById("tela");
+  const EL_PTS = document.getElementById("pontos");
+  const EL_NIVEL = document.getElementById("nivel");
+  const EL_INICIAR = document.getElementById("iniciar");
+  const EL_REC = document.getElementById("recomecar");
+
+  let tabuleiro = [];
+  let peca = null;
+  let posX = 0, posY = 0;
+  
+  let pontos = 0;
+  let nivel = 1;
+  let linhasTotais = 0;
+  
+  let parado = true;
+  let intervalo;
+  let velocidade = 800; 
+
+  /* =========================================
+     SISTEMA DE ÁUDIO (WEB AUDIO API)
+     ========================================= */
+  let audioCtx = null;
+
+  function initAudio() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  // Função genérica para tocar um tom
+  function playTone(freq, type, duration, vol = 0.1, delay = 0) {
+    if (!audioCtx) return;
+    
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+
+    // Envelope de volume (evita estalos no som)
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start(audioCtx.currentTime + delay);
+    osc.stop(audioCtx.currentTime + delay + duration);
+  }
+
+  // Efeitos sonoros específicos
+  const SFX = {
+    move: () => playTone(300, 'square', 0.05, 0.05),
+    rotate: () => playTone(400, 'square', 0.05, 0.05),
+    drop: () => playTone(150, 'sawtooth', 0.1, 0.08),
+    clear: (lines) => {
+      // Som mais agudo conforme limpa mais linhas
+      const baseFreq = 600 + (lines * 100);
+      playTone(baseFreq, 'sine', 0.1, 0.1);
+      playTone(baseFreq + 200, 'sine', 0.15, 0.1, 0.1);
+    },
+    levelUp: () => {
+      playTone(400, 'sine', 0.1, 0.1);
+      playTone(500, 'sine', 0.1, 0.1, 0.1);
+      playTone(600, 'sine', 0.2, 0.1, 0.2);
+    },
+    gameOver: () => {
+      playTone(300, 'sawtooth', 0.3, 0.1);
+      playTone(200, 'sawtooth', 0.3, 0.1, 0.3);
+      playTone(100, 'sawtooth', 0.6, 0.1, 0.6);
+    }
+  };
+  /* ========================================= */
+
+  const FORMAS = [
+    { cor: 1, matriz: [[1,1,1,1]] }, 
+    { cor: 2, matriz: [[1,1],[1,1]] }, 
+    { cor: 3, matriz: [[0,1,0],[1,1,1]] }, 
+    { cor: 4, matriz: [[0,1,1],[1,1,0]] }, 
+    { cor: 5, matriz: [[1,1,0],[0,1,1]] }, 
+    { cor: 6, matriz: [[1,0,0],[1,1,1]] }, 
+    { cor: 7, matriz: [[0,0,1],[1,1,1]] }  
+  ];
+
+  function novaMatriz() {
+    return Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+  }
+
+  function desenhar() {
+    TELA.innerHTML = "";
+    const frag = document.createDocumentFragment();
+
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        const d = document.createElement("div");
+        d.className = "celula";
+        if (tabuleiro[y][x] > 0) d.classList.add(`p${tabuleiro[y][x]}`);
+        frag.appendChild(d);
+      }
+    }
+
+    if (peca) {
+      for (let y = 0; y < peca.length; y++) {
+        for (let x = 0; x < peca[y].length; x++) {
+          if (peca[y][x] > 0) {
+            const tX = posX + x;
+            const tY = posY + y;
+            if (tY >= 0 && tY < ROWS && tX >= 0 && tX < COLS) {
+              const index = tY * COLS + tX;
+              const celula = frag.children[index];
+              if (celula) {
+                celula.className = `celula p${peca[y][x]}`;
+              }
+            }
+          }
+        }
+      }
+    }
+    TELA.appendChild(frag);
+    EL_PTS.textContent = "Pontos: " + pontos;
+    EL_NIVEL.textContent = "Nível: " + nivel;
+  }
+
+  function novaPeca() {
+    const index = Math.floor(Math.random() * FORMAS.length);
+    const forma = FORMAS[index];
+    peca = forma.matriz.map(arr => [...arr]);
+    
+    for(let y=0; y<peca.length; y++){
+        for(let x=0; x<peca[y].length; x++){
+            if(peca[y][x] === 1) peca[y][x] = forma.cor;
+        }
+    }
+    
+    posX = Math.floor((COLS - peca[0].length) / 2);
+    posY = 0;
+
+    if (colisao(posX, posY, peca)) {
+      fimDeJogo();
+    }
+  }
+
+  function colisao(x, y, matriz) {
+    for (let r = 0; r < matriz.length; r++) {
+      for (let c = 0; c < matriz[r].length; c++) {
+        if (matriz[r][c] > 0) {
+          const nX = x + c;
+          const nY = y + r;
+          if (nX < 0 || nX >= COLS || nY >= ROWS) return true;
+          if (nY >= 0 && tabuleiro[nY][nX] > 0) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function mesclar() {
+    for (let r = 0; r < peca.length; r++) {
+      for (let c = 0; c < peca[r].length; c++) {
+        if (peca[r][c] > 0) {
+          tabuleiro[posY + r][posX + c] = peca[r][c];
+        }
+      }
+    }
+    SFX.drop(); // Toca o som de peça encaixada
+    limparLinhas();
+    novaPeca();
+    desenhar();
+  }
+
+  function atualizarVelocidade() {
+    velocidade = Math.max(100, 800 - ((nivel - 1) * 70));
+    if (!parado) {
+      clearInterval(intervalo);
+      intervalo = setInterval(tick, velocidade);
+    }
+  }
+
+  function limparLinhas() {
+    let linhasRemovidas = 0;
+    for (let y = ROWS - 1; y >= 0; y--) {
+      if (tabuleiro[y].every(celula => celula > 0)) {
+        tabuleiro.splice(y, 1);
+        tabuleiro.unshift(Array(COLS).fill(0));
+        linhasRemovidas++;
+        y++; 
+      }
+    }
+    
+    if (linhasRemovidas > 0) {
+      SFX.clear(linhasRemovidas); // Toca o som de linha limpa
+
+      const pontosBase = [0, 100, 300, 500, 800];
+      pontos += pontosBase[linhasRemovidas] || 1000;
+      
+      linhasTotais += linhasRemovidas;
+      const novoNivel = Math.floor(linhasTotais / 10) + 1;
+      
+      if (novoNivel > nivel) {
+        nivel = novoNivel;
+        SFX.levelUp(); // Toca o som de subir de nível
+        atualizarVelocidade();
+        
+        EL_NIVEL.style.transform = "scale(1.3)";
+        setTimeout(() => { EL_NIVEL.style.transform = "scale(1)"; }, 300);
+      }
+    }
+  }
+
+  function rodar() {
+    if(parado || !peca) return;
+    const rotacionada = [];
+    for (let c = 0; c < peca[0].length; c++) {
+      rotacionada.push([]);
+      for (let r = peca.length - 1; r >= 0; r--) {
+        rotacionada[c].push(peca[r][c]);
+      }
+    }
+    
+    if (!colisao(posX, posY, rotacionada)) {
+      peca = rotacionada;
+      SFX.rotate(); // Toca o som de rotação
+    } else if (!colisao(posX - 1, posY, rotacionada)) {
+      posX--;
+      peca = rotacionada;
+      SFX.rotate();
+    } else if (!colisao(posX + 1, posY, rotacionada)) {
+      posX++;
+      peca = rotacionada;
+      SFX.rotate();
+    }
+  }
+
+  function mover(dx, dy) {
+    if (parado || !peca) return;
+    
+    if (!colisao(posX + dx, posY + dy, peca)) {
+      posX += dx;
+      posY += dy;
+      if (dx !== 0) SFX.move(); // Toca som se mover para os lados
+    } else if (dy > 0) {
+      mesclar();
+    }
+    desenhar();
+  }
+
+  function tick() {
+    if (parado) return;
+    mover(0, 1);
+  }
+
+  function fimDeJogo() {
+    parado = true;
+    clearInterval(intervalo);
+    SFX.gameOver(); // Toca o som de fim de jogo
+    
+    setTimeout(() => {
+      alert("Fim de jogo!\nPontuação: " + pontos + "\nNível Alcançado: " + nivel);
+      EL_INICIAR.textContent = "▶ Jogar Novamente";
+      EL_INICIAR.classList.remove("oculto");
+      EL_REC.classList.add("oculto");
+    }, 600); // Pequeno delay para o som tocar antes do alerta
+  }
+
+  function iniciarJogo() {
+    initAudio(); // Desbloqueia o áudio no navegador (precisa ser via clique)
+
+    tabuleiro = novaMatriz();
+    pontos = 0;
+    nivel = 1;
+    linhasTotais = 0;
+    velocidade = 800;
+    parado = false;
+    
+    novaPeca();
+    desenhar();
+    
+    clearInterval(intervalo);
+    intervalo = setInterval(tick, velocidade);
+    
+    EL_INICIAR.classList.add("oculto");
+    EL_REC.classList.remove("oculto");
+  }
+
+  function prepararJogo() {
+    tabuleiro = novaMatriz();
+    pontos = 0;
+    nivel = 1;
+    linhasTotais = 0;
+    parado = true;
+    peca = null;
+    desenhar();
+    EL_INICIAR.textContent = "▶ Iniciar";
+    EL_INICIAR.classList.remove("oculto");
+    EL_REC.classList.add("oculto");
+  }
+
+  document.getElementById("btn-cima").addEventListener("click", rodar);
+  document.getElementById("btn-esq").addEventListener("click", () => mover(-1, 0));
+  document.getElementById("btn-dir").addEventListener("click", () => mover(1, 0));
+  document.getElementById("btn-baixo").addEventListener("click", () => mover(0, 1));
+  
+  EL_INICIAR.addEventListener("click", iniciarJogo);
+  EL_REC.addEventListener("click", iniciarJogo);
+
+  document.addEventListener("keydown", (e) => {
+    if(parado) return;
+    if (e.key === "ArrowLeft") mover(-1, 0);
+    if (e.key === "ArrowRight") mover(1, 0);
+    if (e.key === "ArrowDown") mover(0, 1);
+    if (e.key === "ArrowUp") rodar();
+    if (e.key === " ") mover(0, 20); 
+  });
+
+  let toqueIni = null;
+  TELA.addEventListener("touchstart", (e) => {
+    const t = e.changedTouches[0];
+    toqueIni = { x: t.clientX, y: t.clientY };
+  }, { passive: true });
+
+  TELA.addEventListener("touchend", (e) => {
+    if (!toqueIni || parado) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - toqueIni.x;
+    const dy = t.clientY - toqueIni.y;
+    toqueIni = null;
+
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
+    
+    if (Math.abs(dx) > Math.abs(dy)) {
+      mover(dx > 0 ? 1 : -1, 0);
+    } else if (dy > 0) {
+      mover(0, 20); 
+    } else {
+      rodar();      
+    }
+  }, { passive: true });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      clearInterval(intervalo);
+    } else if (!parado) {
+      clearInterval(intervalo);
+      intervalo = setInterval(tick, velocidade);
+    }
+  });
+
+  prepararJogo();
+})();
+</script>
+</body>
+</html>
